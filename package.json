@@ -1,0 +1,26 @@
+{
+  "name": "requestping",
+  "version": "1.0.0",
+  "description": "Privacy-first FOIA request filing service",
+  "main": "api/server.js",
+  "scripts": {
+    "start": "node api/server.js",
+    "dev": "nodemon api/server.js"
+  },
+  "keywords": ["foia", "privacy", "transparency", "government"],
+  "author": "Jonny",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "sqlite3": "^5.1.6",
+    "bcrypt": "^5.1.1",
+    "jsonwebtoken": "^9.0.2",
+    "node-fetch": "^2.7.0",
+    "resend": "^3.0.0",
+    "dotenv": "^16.3.1",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}

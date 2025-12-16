@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - RequestPing</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">RequestPing</div>
+            <div class="nav-links">
+                <a href="dashboard.html">Dashboard</a>
+                <a href="#" id="logout">Logout</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="dashboard">
+        <div class="dashboard-header">
+            <div>
+                <h1>Your FOIA Requests</h1>
+                <p style="color: var(--text-secondary);">Track all your requests in one place.</p>
+            </div>
+            <a href="request.html" class="primary-button">+ New Request</a>
+        </div>
+
+        <div id="usage-info" style="background: var(--bg-secondary); padding: 1rem; border-radius: 0.5rem; margin-bottom: 2rem;">
+            <p><strong>Current Plan:</strong> Standard ($20/month)</p>
+            <p style="color: var(--text-secondary); margin-top: 0.5rem;">
+                <span id="requests-used">Loading...</span>
+            </p>
+        </div>
+
+        <div id="requests-container">
+            <div style="text-align: center; padding: 3rem; color: var(--text-secondary);">
+                Loading your requests...
+            </div>
+        </div>
+
+        <div id="no-requests" style="display: none; text-align: center; padding: 4rem; background: var(--bg-secondary); border-radius: 1rem;">
+            <h2>No requests yet</h2>
+            <p style="color: var(--text-secondary); margin: 1rem 0 2rem;">
+                Ready to file your first anonymous FOIA request?
+            </p>
+            <a href="request.html" class="primary-button">Create Your First Request</a>
+        </div>
+    </main>
+
+    <script src="js/dashboard.js"></script>
+</body>
+</html>

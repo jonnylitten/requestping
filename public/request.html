@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New FOIA Request - RequestPing</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">RequestPing</div>
+            <div class="nav-links">
+                <a href="dashboard.html">Dashboard</a>
+                <a href="#" id="logout">Logout</a>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <div style="max-width: 800px; margin: 2rem auto;">
+            <h1>New FOIA Request</h1>
+            <p style="color: var(--text-secondary); margin-bottom: 2rem;">
+                Tell us what records you're looking for. We'll help craft a proper FOIA request and file it anonymously on your behalf.
+            </p>
+
+            <form id="request-form">
+                <div class="form-group">
+                    <label for="agency">Federal Agency *</label>
+                    <select id="agency" name="agency" required>
+                        <option value="">Select an agency...</option>
+                        <option value="loading">Loading agencies...</option>
+                    </select>
+                    <small>Which federal agency has the records you need?</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="subject">Request Subject *</label>
+                    <input type="text" id="subject" name="subject" required placeholder="e.g., Email records about Project X">
+                    <small>Brief description of what you're requesting.</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Detailed Description *</label>
+                    <textarea id="description" name="description" required placeholder="Describe the records you're seeking in as much detail as possible. Include dates, names, keywords, or any other identifying information that will help the agency locate the records."></textarea>
+                    <small>The more specific you are, the better. Include relevant dates, names, departments, or other identifying details.</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="date-range-start">Date Range (optional)</label>
+                    <div style="display: flex; gap: 1rem; align-items: center;">
+                        <input type="date" id="date-range-start" name="date-range-start" placeholder="Start date">
+                        <span>to</span>
+                        <input type="date" id="date-range-end" name="date-range-end" placeholder="End date">
+                    </div>
+                    <small>If your request covers a specific time period, specify it here.</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="delivery-format">Preferred Delivery Format</label>
+                    <select id="delivery-format" name="delivery-format">
+                        <option value="electronic">Electronic (PDF)</option>
+                        <option value="paper">Paper copies</option>
+                        <option value="either">Either</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Fee Information</label>
+                    <p style="background: var(--bg-secondary); padding: 1rem; border-radius: 0.5rem; font-size: 0.9rem; color: var(--text-secondary);">
+                        <strong>Note:</strong> Since we file requests in RequestPing's name, commercial fee rates apply by default.
+                        You may be responsible for search and duplication fees. We'll notify you if fees are expected before processing the request.
+                        You can request a fee waiver if your request serves the public interest.
+                    </p>
+                    <label style="margin-top: 0.5rem;">
+                        <input type="checkbox" id="request-fee-waiver" name="request-fee-waiver">
+                        Request fee waiver (public interest justification required)
+                    </label>
+                </div>
+
+                <div class="form-group" id="fee-waiver-justification" style="display: none;">
+                    <label for="waiver-reason">Fee Waiver Justification</label>
+                    <textarea id="waiver-reason" name="waiver-reason" placeholder="Explain how disclosure of this information serves the public interest..."></textarea>
+                    <small>Explain how this information will contribute to public understanding of government operations.</small>
+                </div>
+
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="acknowledge-commercial" name="acknowledge-commercial" required>
+                        I understand that commercial fee rates may apply and that I may be responsible for search and duplication fees
+                    </label>
+                </div>
+
+                <div id="error-message" class="error-message" style="display: none;"></div>
+                <div id="success-message" class="success-message" style="display: none;"></div>
+
+                <div style="display: flex; gap: 1rem;">
+                    <button type="button" onclick="window.location.href='dashboard.html'" class="primary-button" style="background: var(--secondary-color); flex: 1;">Cancel</button>
+                    <button type="submit" class="primary-button" style="flex: 2;">Submit Request</button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <script src="js/request.js"></script>
+</body>
+</html>
