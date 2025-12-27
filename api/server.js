@@ -3,8 +3,8 @@ const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const fetch = require('node-fetch');
 const { Resend } = require('resend');
+const { getVAOffice, getAllRecordTypes } = require('./va-config');
 require('dotenv').config();
 
 const app = express();
@@ -159,28 +159,24 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
-// ==================== FOIA AGENCIES ROUTES ====================
+// ==================== VA RECORD TYPES ROUTES ====================
 
-// Get agencies from FOIA.gov API
+// Get VA record types for frontend dropdown
+app.get('/api/va-record-types', async (req, res) => {
+    try {
+        const recordTypes = getAllRecordTypes();
+        res.json({ recordTypes });
+    } catch (error) {
+        console.error('Error fetching record types:', error);
+        res.status(500).json({ error: 'Failed to fetch record types' });
+    }
+});
+
+// Keep old /api/agencies endpoint for backwards compatibility
 app.get('/api/agencies', async (req, res) => {
     try {
-        const apiKey = process.env.FOIA_API_KEY;
-        const response = await fetch(`https://api.foia.gov/api/agency_components?api_key=${apiKey}`);
-        const data = await response.json();
-
-        // Transform and simplify agency data
-        const agencies = data
-            .filter(agency => agency.abbreviation && agency.name)
-            .map(agency => ({
-                abbreviation: agency.abbreviation,
-                name: agency.name,
-                description: agency.description || '',
-                website: agency.website || '',
-                email: agency.request_form?.email || agency.emails?.[0] || ''
-            }))
-            .sort((a, b) => a.name.localeCompare(b.name));
-
-        res.json({ agencies });
+        const recordTypes = getAllRecordTypes();
+        res.json({ agencies: recordTypes });
     } catch (error) {
         console.error('Error fetching agencies:', error);
         res.status(500).json({ error: 'Failed to fetch agencies' });
@@ -210,28 +206,33 @@ app.get('/api/requests', authenticateToken, async (req, res) => {
     }
 });
 
-// Create new FOIA request
+// Create new VA FOIA request
 app.post('/api/requests', authenticateToken, async (req, res) => {
     try {
         const {
-            agency,
-            agency_name,
+            record_type,
             subject,
             description,
+            record_author,
+            record_recipient,
+            record_title,
             date_range_start,
             date_range_end,
             delivery_format,
             request_fee_waiver,
-            waiver_reason
+            waiver_reason,
+            requester_phone
         } = req.body;
 
         // Validate required fields
-        if (!agency || !agency_name || !subject || !description) {
-            return res.status(400).json({ error: 'Missing required fields' });
+        if (!record_type || !subject || !description) {
+            return res.status(400).json({ error: 'Missing required fields: record_type, subject, description' });
         }
 
+        // Get user email for contact info
+        const user = await dbGet('SELECT email, monthly_request_limit FROM users WHERE id = ?', [req.user.userId]);
+
         // Check user's monthly request limit
-        const user = await dbGet('SELECT monthly_request_limit FROM users WHERE id = ?', [req.user.userId]);
         const requestCount = await dbGet(
             `SELECT COUNT(*) as count FROM requests
              WHERE user_id = ?
@@ -243,55 +244,69 @@ app.post('/api/requests', authenticateToken, async (req, res) => {
             return res.status(403).json({ error: 'Monthly request limit reached' });
         }
 
+        // Route to correct VA office based on record type
+        const vaOffice = getVAOffice(record_type);
+
         // Create request
         const requestId = generateId();
         await dbRun(
             `INSERT INTO requests (
-                id, user_id, agency, agency_name, subject, description,
+                id, user_id, va_office, va_office_name, record_type,
+                subject, description, record_author, record_recipient, record_title,
                 date_range_start, date_range_end, delivery_format,
-                request_fee_waiver, waiver_reason, status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+                request_fee_waiver, waiver_reason, requester_phone, requester_email,
+                status
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
             [
                 requestId,
                 req.user.userId,
-                agency,
-                agency_name,
+                vaOffice.code,
+                vaOffice.name,
+                record_type,
                 subject,
                 description,
-                date_range_start,
-                date_range_end,
-                delivery_format,
+                record_author || null,
+                record_recipient || null,
+                record_title || null,
+                date_range_start || null,
+                date_range_end || null,
+                delivery_format || 'electronic',
                 request_fee_waiver ? 1 : 0,
-                waiver_reason
+                waiver_reason || null,
+                requester_phone || null,
+                user.email
             ]
         );
 
         // Log activity
         await dbRun(
             'INSERT INTO activity_log (id, request_id, activity_type, description) VALUES (?, ?, ?, ?)',
-            [generateId(), requestId, 'request_created', 'FOIA request created']
+            [generateId(), requestId, 'request_created', `VA FOIA request created for ${vaOffice.name}`]
         );
 
-        // Get agency email and submit request
-        const apiKey = process.env.FOIA_API_KEY;
-        const agencyResponse = await fetch(`https://api.foia.gov/api/agency_components?api_key=${apiKey}`);
-        const agencies = await agencyResponse.json();
-        const targetAgency = agencies.find(a => a.abbreviation === agency);
+        // Submit request via email to VA office
+        await submitVAFOIARequest(requestId, vaOffice, {
+            subject,
+            description,
+            record_type,
+            record_author,
+            record_recipient,
+            record_title,
+            date_range_start,
+            date_range_end,
+            delivery_format,
+            request_fee_waiver,
+            waiver_reason,
+            requester_phone,
+            requester_email: user.email
+        });
 
-        if (targetAgency) {
-            // Send FOIA request via email using Resend
-            await submitFOIARequest(requestId, targetAgency, {
-                subject,
-                description,
-                date_range_start,
-                date_range_end,
-                delivery_format,
-                request_fee_waiver,
-                waiver_reason
-            });
-        }
-
-        res.json({ id: requestId, message: 'Request created successfully' });
+        res.json({
+            id: requestId,
+            message: `Request created and submitted to ${vaOffice.name}`,
+            office: vaOffice.name,
+            email: vaOffice.email
+        });
     } catch (error) {
         console.error('Error creating request:', error);
         res.status(500).json({ error: 'Failed to create request' });
@@ -329,20 +344,19 @@ app.get('/api/requests/:id', authenticateToken, async (req, res) => {
 
 // ==================== EMAIL FUNCTIONS ====================
 
-async function submitFOIARequest(requestId, agency, requestDetails) {
+async function submitVAFOIARequest(requestId, vaOffice, requestDetails) {
     try {
-        const emailBody = generateFOIAEmailBody(requestDetails);
-        const agencyEmail = agency.request_form?.email || agency.emails?.[0];
+        const emailBody = generateVAFOIAEmailBody(requestDetails, vaOffice);
 
-        if (!agencyEmail) {
-            console.error('No email found for agency:', agency.abbreviation);
+        if (!vaOffice.email) {
+            console.error('No email found for VA office:', vaOffice.code);
             return;
         }
 
         // Send email via Resend
         await resend.emails.send({
             from: process.env.FROM_EMAIL,
-            to: agencyEmail,
+            to: vaOffice.email,
             subject: `FOIA Request: ${requestDetails.subject}`,
             text: emailBody
         });
@@ -358,25 +372,70 @@ async function submitFOIARequest(requestId, agency, requestDetails) {
         // Log activity
         await dbRun(
             'INSERT INTO activity_log (id, request_id, activity_type, description) VALUES (?, ?, ?, ?)',
-            [generateId(), requestId, 'request_submitted', `Request submitted to ${agency.name}`]
+            [generateId(), requestId, 'request_submitted', `Request submitted to ${vaOffice.name} (${vaOffice.email})`]
         );
 
-        console.log(`FOIA request ${requestId} submitted to ${agency.name}`);
+        console.log(`VA FOIA request ${requestId} submitted to ${vaOffice.name}`);
     } catch (error) {
-        console.error('Error submitting FOIA request:', error);
+        console.error('Error submitting VA FOIA request:', error);
+        throw error;
     }
 }
 
-function generateFOIAEmailBody(details) {
-    const { subject, description, date_range_start, date_range_end, delivery_format, request_fee_waiver, waiver_reason } = details;
+function generateVAFOIAEmailBody(details, vaOffice) {
+    const {
+        subject,
+        description,
+        record_type,
+        record_author,
+        record_recipient,
+        record_title,
+        date_range_start,
+        date_range_end,
+        delivery_format,
+        request_fee_waiver,
+        waiver_reason,
+        requester_phone,
+        requester_email
+    } = details;
 
-    let body = `To Whom It May Concern:
+    let body = `Freedom of Information Act Request
+
+To Whom It May Concern:
 
 This is a request under the Freedom of Information Act (5 U.S.C. § 552).
 
-REQUESTED RECORDS:
+CONTACT INFORMATION:
+RequestPing FOIA Service
+Email: ${requester_email || process.env.FROM_EMAIL}`;
+
+    if (requester_phone) {
+        body += `
+Phone: ${requester_phone}`;
+    }
+
+    body += `
+
+RECORDS REQUESTED:
 
 ${description}`;
+
+    // Add specific record details (per 38 CFR § 1.554)
+    if (record_title) {
+        body += `
+
+Record Title/Name: ${record_title}`;
+    }
+
+    if (record_author) {
+        body += `
+Record Author: ${record_author}`;
+    }
+
+    if (record_recipient) {
+        body += `
+Record Recipient: ${record_recipient}`;
+    }
 
     if (date_range_start && date_range_end) {
         body += `
@@ -387,8 +446,19 @@ ${date_range_start} to ${date_range_end}`;
 
     body += `
 
+RECORD TYPE:
+${record_type.replace(/_/g, ' ').toUpperCase()}`;
+
+    body += `
+
 DELIVERY FORMAT:
-I request that the responsive records be provided in ${delivery_format === 'electronic' ? 'electronic format (PDF)' : delivery_format === 'paper' ? 'paper format' : 'either electronic or paper format'}.`;
+I request that responsive records be provided in ${
+        delivery_format === 'electronic'
+            ? 'electronic format (PDF)'
+            : delivery_format === 'paper'
+            ? 'paper format'
+            : 'either electronic or paper format'
+    }.`;
 
     if (request_fee_waiver) {
         body += `
@@ -399,18 +469,20 @@ I request a waiver of all fees for this request. ${waiver_reason}`;
         body += `
 
 FEES:
-Please notify me before processing this request if the fees are expected to exceed $25.00.`;
+Please notify me before processing this request if fees are expected to exceed $25.00. I agree to pay fees up to that amount.`;
     }
 
     body += `
 
 Please acknowledge receipt of this request and provide a tracking number if available.
 
+As required by 38 CFR § 1.554, this request contains sufficient detail to allow VA personnel to locate the records with a reasonable amount of effort.
+
 Thank you for your attention to this matter.
 
 Sincerely,
 
-RequestPing
+RequestPing FOIA Service
 On behalf of a third party
 ${process.env.FROM_EMAIL}`;
 

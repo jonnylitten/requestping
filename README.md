@@ -1,17 +1,17 @@
 # RequestPing
 
-Privacy-first FOIA request filing service. File federal FOIA requests anonymously with transparent pricing.
+Privacy-first VA FOIA request filing service. File Department of Veterans Affairs FOIA requests anonymously with transparent pricing.
 
 ## Overview
 
-RequestPing is a web application that allows users to file Freedom of Information Act (FOIA) requests to federal agencies while maintaining their privacy. We file requests in RequestPing's name, keeping the requester's identity completely private.
+RequestPing is a web application that allows users to file Freedom of Information Act (FOIA) requests to the Department of Veterans Affairs while maintaining their privacy. We file requests in RequestPing's name, keeping the requester's identity completely private.
 
 ## Features
 
 - **Anonymous Filing**: Requests filed in RequestPing's name, not yours
-- **Federal Agency Coverage**: Access to 100+ federal agencies via FOIA.gov API
+- **VA Office Routing**: Automatically routes to correct VA office (VBA, VHA, NCA, OIG)
 - **Request Tracking**: Private dashboard to monitor all your requests
-- **Automated Follow-ups**: System handles follow-up communications
+- **Email-Based Submission**: Direct submission to VA FOIA offices via email
 - **Document Delivery**: Secure delivery of received documents
 - **Transparent Pricing**: $20/month for up to 5 requests
 
@@ -29,8 +29,7 @@ RequestPing is a web application that allows users to file Freedom of Informatio
 - Resend for email delivery
 
 **APIs:**
-- FOIA.gov API for agency data
-- Resend API for email sending
+- Resend API for email sending to VA offices
 
 ## Project Structure
 
@@ -76,9 +75,6 @@ requestping/
 
    Copy `.env` and fill in your values:
    ```bash
-   # FOIA.gov API Configuration
-   FOIA_API_KEY=your_foia_api_key
-
    # Server Configuration
    PORT=3000
    NODE_ENV=development
@@ -118,12 +114,12 @@ requestping/
 - `POST /api/auth/signup` - Create new user account
 - `POST /api/auth/login` - Login and receive JWT token
 
-### Agencies
-- `GET /api/agencies` - Get list of federal agencies from FOIA.gov
+### VA Record Types
+- `GET /api/va-record-types` - Get list of VA record types and offices
 
 ### Requests
 - `GET /api/requests` - Get all requests for authenticated user
-- `POST /api/requests` - Create new FOIA request
+- `POST /api/requests` - Create new VA FOIA request
 - `GET /api/requests/:id` - Get specific request details
 
 ## Deployment
@@ -180,14 +176,25 @@ Since we file requests in RequestPing's name, commercial fee category applies by
 
 We notify users before processing if significant fees are expected.
 
+## VA Office Coverage
+
+RequestPing routes requests to the appropriate VA office:
+
+- **VBA (Veterans Benefits Administration)**: Benefits, compensation, education, home loans, insurance
+- **VHA (Veterans Health Administration)**: Healthcare operations, contracts, HR documents
+- **NCA (National Cemetery Administration)**: Cemetery and burial records
+- **OIG (Office of Inspector General)**: OIG investigations, audits, reports
+
 ## Limitations
 
 **Current MVP covers:**
-- Federal agencies only (not state/local)
+- Department of Veterans Affairs FOIA requests only
 - Basic request filing and tracking
-- Automated submission via email
+- Email submission to VA offices
+- Automatic routing to correct VA office
 
 **Not included in MVP:**
+- Other federal agency requests
 - State-level FOIA requests
 - Appeals assistance (would require licensed attorney)
 - Advanced fee waiver arguments

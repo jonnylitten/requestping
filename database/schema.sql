@@ -9,19 +9,34 @@ CREATE TABLE IF NOT EXISTS users (
     monthly_request_limit INTEGER DEFAULT 5
 );
 
--- FOIA Requests table
+-- FOIA Requests table (VA-specific)
 CREATE TABLE IF NOT EXISTS requests (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,
-    agency TEXT NOT NULL,
-    agency_name TEXT NOT NULL,
+
+    -- VA-specific office and record type
+    va_office TEXT NOT NULL,           -- VBA, VHA, NCA, OIG, GENERAL
+    va_office_name TEXT NOT NULL,      -- Full office name
+    record_type TEXT NOT NULL,         -- Type of record (benefits, contracts, etc.)
+
     subject TEXT NOT NULL,
     description TEXT NOT NULL,
+
+    -- VA-specific record details (per 38 CFR § 1.554)
+    record_author TEXT,                -- Author of record (if known)
+    record_recipient TEXT,             -- Recipient of record (if known)
+    record_title TEXT,                 -- Title/name of record
+
     date_range_start DATE,
     date_range_end DATE,
     delivery_format TEXT DEFAULT 'electronic',
     request_fee_waiver BOOLEAN DEFAULT 0,
     waiver_reason TEXT,
+
+    -- Contact info (VA requires return address)
+    requester_phone TEXT,              -- Optional but recommended
+    requester_email TEXT,              -- Optional but recommended
+
     status TEXT DEFAULT 'pending',
     tracking_number TEXT,
     submitted_at DATETIME,

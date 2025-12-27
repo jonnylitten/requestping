@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>New FOIA Request - RequestPing</title>
+    <title>New VA FOIA Request - RequestPing</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -19,19 +19,25 @@
 
     <main>
         <div style="max-width: 800px; margin: 2rem auto;">
-            <h1>New FOIA Request</h1>
+            <h1>New VA FOIA Request</h1>
             <p style="color: var(--text-secondary); margin-bottom: 2rem;">
-                Tell us what records you're looking for. We'll help craft a proper FOIA request and file it anonymously on your behalf.
+                Request records from the Department of Veterans Affairs. We'll file your request anonymously with the appropriate VA office.
             </p>
 
             <form id="request-form">
                 <div class="form-group">
-                    <label for="agency">Federal Agency *</label>
-                    <select id="agency" name="agency" required>
-                        <option value="">Select an agency...</option>
-                        <option value="loading">Loading agencies...</option>
+                    <label for="record-type">Record Type *</label>
+                    <select id="record-type" name="record-type" required>
+                        <option value="">Select record type...</option>
+                        <option value="loading">Loading record types...</option>
                     </select>
-                    <small>Which federal agency has the records you need?</small>
+                    <small>Select the type of VA records you're requesting. This determines which VA office handles your request.</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="requester-phone">Contact Phone (optional but recommended)</label>
+                    <input type="tel" id="requester-phone" name="requester-phone" placeholder="(123) 456-7890">
+                    <small>VA recommends providing a phone number for faster communication.</small>
                 </div>
 
                 <div class="form-group">
@@ -44,6 +50,24 @@
                     <label for="description">Detailed Description *</label>
                     <textarea id="description" name="description" required placeholder="Describe the records you're seeking in as much detail as possible. Include dates, names, keywords, or any other identifying information that will help the agency locate the records."></textarea>
                     <small>The more specific you are, the better. Include relevant dates, names, departments, or other identifying details.</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="record-title">Record Title/Name (optional)</label>
+                    <input type="text" id="record-title" name="record-title" placeholder="e.g., Email titled 'Budget Meeting Notes'">
+                    <small>If you know the specific title or name of the document.</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="record-author">Record Author (optional)</label>
+                    <input type="text" id="record-author" name="record-author" placeholder="e.g., John Smith, Director of Operations">
+                    <small>If you know who created or authored the document.</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="record-recipient">Record Recipient (optional)</label>
+                    <input type="text" id="record-recipient" name="record-recipient" placeholder="e.g., Jane Doe, Deputy Administrator">
+                    <small>If you know who received the document.</small>
                 </div>
 
                 <div class="form-group">
