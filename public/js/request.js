@@ -11,42 +11,26 @@ document.getElementById('logout').addEventListener('click', (e) => {
     window.location.href = 'index.html';
 });
 
-// Load VA record types
-async function loadRecordTypes() {
+// Load agencies from FOIA.gov API
+async function loadAgencies() {
     try {
-        const response = await fetch('/api/va-record-types');
+        const response = await fetch('/api/agencies');
         const data = await response.json();
 
-        const select = document.getElementById('record-type');
-        select.innerHTML = '<option value="">Select record type...</option>';
+        const select = document.getElementById('agency');
+        select.innerHTML = '<option value="">Select an agency...</option>';
 
-        // Group by VA office
-        const grouped = {};
-        data.recordTypes.forEach(type => {
-            if (!grouped[type.office]) {
-                grouped[type.office] = [];
-            }
-            grouped[type.office].push(type);
+        data.agencies.forEach(agency => {
+            const option = document.createElement('option');
+            option.value = agency.abbreviation;
+            option.textContent = `${agency.name} (${agency.abbreviation})`;
+            option.dataset.name = agency.name;
+            select.appendChild(option);
         });
-
-        // Create optgroups
-        for (const [office, types] of Object.entries(grouped)) {
-            const optgroup = document.createElement('optgroup');
-            optgroup.label = office;
-
-            types.forEach(type => {
-                const option = document.createElement('option');
-                option.value = type.value;
-                option.textContent = type.label;
-                optgroup.appendChild(option);
-            });
-
-            select.appendChild(optgroup);
-        }
     } catch (error) {
-        console.error('Error loading record types:', error);
-        document.getElementById('record-type').innerHTML =
-            '<option value="">Error loading record types. Please refresh.</option>';
+        console.error('Error loading agencies:', error);
+        document.getElementById('agency').innerHTML =
+            '<option value="">Error loading agencies. Please refresh.</option>';
     }
 }
 
@@ -69,19 +53,17 @@ document.getElementById('request-fee-waiver').addEventListener('change', (e) => 
 document.getElementById('request-form').addEventListener('submit', async (e) => {
     e.preventDefault();
 
+    const agencySelect = document.getElementById('agency');
     const formData = {
-        record_type: document.getElementById('record-type').value,
+        agency: agencySelect.value,
+        agency_name: agencySelect.options[agencySelect.selectedIndex].dataset.name,
         subject: document.getElementById('subject').value,
         description: document.getElementById('description').value,
-        record_author: document.getElementById('record-author').value || null,
-        record_recipient: document.getElementById('record-recipient').value || null,
-        record_title: document.getElementById('record-title').value || null,
         date_range_start: document.getElementById('date-range-start').value || null,
         date_range_end: document.getElementById('date-range-end').value || null,
         delivery_format: document.getElementById('delivery-format').value,
         request_fee_waiver: document.getElementById('request-fee-waiver').checked,
-        waiver_reason: document.getElementById('waiver-reason').value || null,
-        requester_phone: document.getElementById('requester-phone').value || null
+        waiver_reason: document.getElementById('waiver-reason').value || null
     };
 
     const errorDiv = document.getElementById('error-message');
@@ -103,7 +85,7 @@ document.getElementById('request-form').addEventListener('submit', async (e) => 
         const data = await response.json();
 
         if (response.ok) {
-            successDiv.textContent = `Request submitted to ${data.office}! Redirecting to dashboard...`;
+            successDiv.textContent = 'Request created successfully! Redirecting to dashboard...';
             successDiv.style.display = 'block';
 
             setTimeout(() => {
@@ -119,5 +101,5 @@ document.getElementById('request-form').addEventListener('submit', async (e) => 
     }
 });
 
-// Load record types on page load
-loadRecordTypes();
+// Load agencies on page load
+loadAgencies();
